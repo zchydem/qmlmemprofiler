@@ -55,14 +55,6 @@ void qmlmemprofile_save(const char *filename);
 int qmlmemprofile_is_enabled();
 }
 
-struct LocationItem
-{
-    QByteArray fileName;
-    int lineNumber;
-};
-
-static QVector<LocationItem> locationStack;
-
 Q_CORE_EXPORT void qmlmemprofile_stats(int *allocCount, int *bytesAllocated)
 {
     qWarning() << "STUB";
@@ -87,28 +79,24 @@ Q_CORE_EXPORT void qmlmemprofile_disable()
 
 Q_CORE_EXPORT void qmlmemprofile_push_location(const char *fileName, int lineNumber)
 {
-    LocationItem item;
-    item.fileName = fileName;
-    item.lineNumber = lineNumber;
-    locationStack.append(item);
+    MallocStats *item = MallocStack::push();
+    item->setFileName(fileName);
+    item->setLineNumber(lineNumber);
 //    qDebug() << "Recorded " << fileName << " bytes is " << R.ru_maxrss;
 }
 
 Q_CORE_EXPORT void qmlmemprofile_pop_location()
 {
-    Q_ASSERT(locationStack.count() >= 1);
-    LocationItem item = locationStack.takeLast();
-    qDebug() << "Popped " << item.fileName << " stats:";
+    MallocStats *item = MallocStack::last();
+    qDebug() << "Popped " << item->fileName() << " stats:";
 
-    qDebug() << "    Total allocations: " << MallocStats::totalAllocations();
-    qDebug() << "    Total reallocations: " << MallocStats::totalAllocations();
-    qDebug() << "    Total bytes allocated: " << MallocStats::totalBytesAllocated();
-    qDebug() << "    Total frees: " << MallocStats::totalFrees();
-    qDebug() << "    Total bytes freed: " << MallocStats::totalBytesFreed();
+    qDebug() << "    Total allocations: " << item->totalAllocations();
+    qDebug() << "    Total reallocations: " << item->totalAllocations();
+    qDebug() << "    Total bytes allocated: " << item->totalBytesAllocated();
+    qDebug() << "    Total frees: " << item->totalFrees();
+    qDebug() << "    Total bytes freed: " << item->totalBytesFreed();
 
-    // TODO: we should snapshot stats into LocationItem and diff them, not clear
-    // them
-    MallocStats::clearStats();
+    MallocStack::pop();
 }
 
 Q_CORE_EXPORT void qmlmemprofile_save(const char *filename)

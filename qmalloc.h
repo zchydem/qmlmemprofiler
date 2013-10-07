@@ -42,22 +42,49 @@
 #ifndef QMALLOC_H
 #define QMALLOC_H
 
+#include <linux/limits.h>
+
 class MallocStats
 {
 public:
-    static size_t totalAllocations();
-    static size_t totalReallocations();
-    static size_t totalFrees();
-    static size_t totalBytesAllocated();
-    static size_t totalBytesFreed();
-    static void clearStats();
+    MallocStats();
+
+    size_t totalAllocations();
+    size_t totalReallocations();
+    size_t totalFrees();
+    size_t totalBytesAllocated();
+    size_t totalBytesFreed();
+
+    void setFileName(const char *fileName);
+    const char *fileName() const;
+    void setLineNumber(int lineNumber);
+    int lineNumber() const;
 
     // use the accessors, I'm just too lazy to friend the alloc funcs
-    static size_t m_totalAllocations;
-    static size_t m_totalReallocations;
-    static size_t m_totalFrees;
-    static size_t m_totalBytesAllocated;
-    static size_t m_totalBytesFreed;
+    size_t m_totalAllocations;
+    size_t m_totalReallocations;
+    size_t m_totalFrees;
+    size_t m_totalBytesAllocated;
+    size_t m_totalBytesFreed;
+    char m_fileName[PATH_MAX];
+    int m_lineNumber;
+};
+
+
+#include <QVector>
+
+#define MAX_STACK_SIZE 1000
+
+class MallocStack
+{
+public:
+    static MallocStats *last();
+    static MallocStats *push();
+    static void pop();
+
+private:
+    static MallocStats m_allocStack[MAX_STACK_SIZE];
+    static int m_stackPointer;
 };
 
 #endif

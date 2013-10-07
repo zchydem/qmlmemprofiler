@@ -1,7 +1,1 @@
-- stop using QVector to store locations
-- snapshot MallocStats on each location, store statistics on the topmost item on
-  the stack
 - thread safety
-- investigate alternatives to malloc_usable_size. perhaps we ought to use magic
-  to poke a size_t into each allocation for book-keeping purposes? can we get at
-  glibc's allocation size easily?

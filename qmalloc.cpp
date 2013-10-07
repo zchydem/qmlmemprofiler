@@ -41,6 +41,7 @@
 
 #include <dlfcn.h>
 #include <malloc.h>
+#include <assert.h>
 
 #include "qmalloc.h"
 
@@ -48,11 +49,35 @@ typedef void *(*mallocptr)(size_t);
 typedef void (*freeptr)(void*);
 typedef void *(*reallocptr)(void*, size_t);
 
-size_t MallocStats::m_totalAllocations = 0;
-size_t MallocStats::m_totalReallocations = 0;
-size_t MallocStats::m_totalFrees = 0;
-size_t MallocStats::m_totalBytesAllocated = 0;
-size_t MallocStats::m_totalBytesFreed = 0;
+MallocStats::MallocStats()
+{
+    m_totalAllocations = 0;
+    m_totalReallocations = 0;
+    m_totalFrees = 0;
+    m_totalBytesAllocated = 0;
+    m_totalBytesFreed = 0;
+    m_lineNumber = 0;
+}
+
+void MallocStats::setFileName(const char *fileName)
+{
+    strncpy(m_fileName, fileName, sizeof(m_fileName));
+}
+
+const char *MallocStats::fileName() const
+{
+    return m_fileName;
+}
+
+void MallocStats::setLineNumber(int lineNumber)
+{
+    m_lineNumber = lineNumber;
+}
+
+int MallocStats::lineNumber() const
+{
+    return m_lineNumber;
+}
 
 size_t MallocStats::totalAllocations()
 {
@@ -80,14 +105,28 @@ size_t MallocStats::totalBytesFreed()
 }
 
 
-void MallocStats::clearStats()
+MallocStats MallocStack::m_allocStack[MAX_STACK_SIZE];
+int MallocStack::m_stackPointer = 0;
+
+MallocStats *MallocStack::last()
 {
-    m_totalAllocations = 0;
-    m_totalReallocations = 0;
-    m_totalFrees = 0;
-    m_totalBytesAllocated = 0;
-    m_totalBytesFreed = 0;
+    return &m_allocStack[m_stackPointer];
 }
+
+MallocStats *MallocStack::push()
+{
+    assert(m_stackPointer < MAX_STACK_SIZE);
+    m_stackPointer++;
+    memset(&m_allocStack[m_stackPointer], 0, sizeof(MallocStats));
+    return last();
+}
+
+void MallocStack::pop()
+{
+    m_stackPointer--;
+}
+
+
 
 /*****************************************************************************
  * intercepted alloc-related functions
@@ -97,15 +136,21 @@ void *malloc(size_t size)
 {
     static mallocptr real_malloc = (mallocptr)dlsym(RTLD_NEXT, "malloc");
     void *ptr = real_malloc(size);
-    MallocStats::m_totalAllocations++;
-    MallocStats::m_totalBytesAllocated += malloc_usable_size(ptr);
+    MallocStats *item = MallocStack::last();
+    if (item) {
+        item->m_totalAllocations++;
+        item->m_totalBytesAllocated += malloc_usable_size(ptr);
+    }
     return ptr;
 }
 
 void free(void *ptr)
 {
-    MallocStats::m_totalFrees++;
-    MallocStats::m_totalBytesFreed += malloc_usable_size(ptr);
+    MallocStats *item = MallocStack::last();
+    if (item) {
+        item->m_totalFrees++;
+        item->m_totalBytesFreed += malloc_usable_size(ptr);
+    }
 
     static freeptr real_free = (freeptr)dlsym(RTLD_NEXT, "free");
     real_free(ptr);
@@ -113,12 +158,19 @@ void free(void *ptr)
 
 void *realloc(void *ptr, size_t size)
 {
-    MallocStats::m_totalReallocations++;
-    MallocStats::m_totalBytesAllocated -= malloc_usable_size(ptr);
+    MallocStats *item = MallocStack::last();
+    if (item) {
+        item->m_totalReallocations++;
+        item->m_totalBytesAllocated -= malloc_usable_size(ptr);
+    }
+
+    // TODO: store bytes deallocated (and reallocated) seperately
 
     static reallocptr real_realloc = (reallocptr)dlsym(RTLD_NEXT, "realloc");
     void *nptr = real_realloc(ptr, size);
 
-    MallocStats::m_totalBytesAllocated += malloc_usable_size(nptr);
+    if (item) {
+        item->m_totalBytesAllocated += malloc_usable_size(nptr);
+    }
     return nptr;
 }
