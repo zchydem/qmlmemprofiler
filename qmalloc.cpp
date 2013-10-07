@@ -42,6 +42,7 @@
 #include <dlfcn.h>
 #include <malloc.h>
 #include <assert.h>
+#include <string.h>
 
 #include "qmalloc.h"
 

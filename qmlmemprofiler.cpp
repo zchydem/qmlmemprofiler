@@ -39,7 +39,7 @@
  **
  ****************************************************************************/
 
-#include <QDebug>
+#include <stdio.h>
 
 #include "qmalloc.h"
 
@@ -55,56 +55,55 @@ void qmlmemprofile_save(const char *filename);
 int qmlmemprofile_is_enabled();
 }
 
-Q_CORE_EXPORT void qmlmemprofile_stats(int *allocCount, int *bytesAllocated)
+MEMPROF_EXPORT void qmlmemprofile_stats(int *allocCount, int *bytesAllocated)
 {
-    qWarning() << "STUB";
+    fprintf(stderr, "STUB\n");
     allocCount = 0;
     bytesAllocated = 0;
 }
 
-Q_CORE_EXPORT void qmlmemprofile_clear()
+MEMPROF_EXPORT void qmlmemprofile_clear()
 {
-    qWarning() << "STUB";
+    fprintf(stderr, "STUB\n");
 }
 
-Q_CORE_EXPORT void qmlmemprofile_enable()
+MEMPROF_EXPORT void qmlmemprofile_enable()
 {
-    qWarning() << "STUB";
+    fprintf(stderr, "STUB\n");
 }
 
-Q_CORE_EXPORT void qmlmemprofile_disable()
+MEMPROF_EXPORT void qmlmemprofile_disable()
 {
-    qWarning() << "STUB";
+    fprintf(stderr, "STUB\n");
 }
 
-Q_CORE_EXPORT void qmlmemprofile_push_location(const char *fileName, int lineNumber)
+MEMPROF_EXPORT void qmlmemprofile_push_location(const char *fileName, int lineNumber)
 {
     MallocStats *item = MallocStack::push();
     item->setFileName(fileName);
     item->setLineNumber(lineNumber);
-//    qDebug() << "Recorded " << fileName << " bytes is " << R.ru_maxrss;
 }
 
-Q_CORE_EXPORT void qmlmemprofile_pop_location()
+MEMPROF_EXPORT void qmlmemprofile_pop_location()
 {
     MallocStats *item = MallocStack::last();
-    qDebug() << "Popped " << item->fileName() << " stats:";
+    fprintf(stderr, "Popped %s, stats:\n", item->fileName());
 
-    qDebug() << "    Total allocations: " << item->totalAllocations();
-    qDebug() << "    Total reallocations: " << item->totalAllocations();
-    qDebug() << "    Total bytes allocated: " << item->totalBytesAllocated();
-    qDebug() << "    Total frees: " << item->totalFrees();
-    qDebug() << "    Total bytes freed: " << item->totalBytesFreed();
+    fprintf(stderr, "    Total allocations: %d\n", item->totalAllocations());
+    fprintf(stderr, "    Total reallocations: %d\n", item->totalAllocations());
+    fprintf(stderr, "    Total bytes allocated: %d\n", item->totalBytesAllocated());
+    fprintf(stderr, "    Total frees: %d\n", item->totalFrees());
+    fprintf(stderr, "    Total bytes freed: %d\n", item->totalBytesFreed());
 
     MallocStack::pop();
 }
 
-Q_CORE_EXPORT void qmlmemprofile_save(const char *filename)
+MEMPROF_EXPORT void qmlmemprofile_save(const char *filename)
 {
-    qWarning() << "STUB";
+    fprintf(stderr, "STUB\n");
 }
 
-Q_CORE_EXPORT int qmlmemprofile_is_enabled()
+MEMPROF_EXPORT int qmlmemprofile_is_enabled()
 {
     // TODO: environment variable enablement?
     return 1;

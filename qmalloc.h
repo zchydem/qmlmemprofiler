@@ -42,6 +42,7 @@
 #ifndef QMALLOC_H
 #define QMALLOC_H
 
+#include <stddef.h>
 #include <linux/limits.h>
 
 class MallocStats
@@ -71,8 +72,6 @@ public:
 };
 
 
-#include <QVector>
-
 #define MAX_STACK_SIZE 1000
 
 class MallocStack
@@ -86,5 +85,7 @@ private:
     static MallocStats m_allocStack[MAX_STACK_SIZE];
     static int m_stackPointer;
 };
+
+#define MEMPROF_EXPORT __attribute__ ((visibility ("default")))
 
 #endif
