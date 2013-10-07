@@ -51,10 +51,12 @@ public:
     MallocStats();
 
     size_t totalAllocations();
-    size_t totalReallocations();
-    size_t totalFrees();
     size_t totalBytesAllocated();
+    size_t totalFrees();
     size_t totalBytesFreed();
+    size_t totalReallocations();
+    size_t totalBytesFreedOnReallocation();
+    size_t totalBytesAllocedOnReallocation();
 
     void setFileName(const char *fileName);
     const char *fileName() const;
@@ -63,10 +65,12 @@ public:
 
     // use the accessors, I'm just too lazy to friend the alloc funcs
     size_t m_totalAllocations;
-    size_t m_totalReallocations;
-    size_t m_totalFrees;
     size_t m_totalBytesAllocated;
+    size_t m_totalFrees;
     size_t m_totalBytesFreed;
+    size_t m_totalReallocations;
+    size_t m_totalBytesFreedOnRealloc;
+    size_t m_totalBytesAllocedOnRealloc;
     char m_fileName[PATH_MAX];
     int m_lineNumber;
 };

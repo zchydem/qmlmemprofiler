@@ -53,10 +53,12 @@ typedef void *(*reallocptr)(void*, size_t);
 MallocStats::MallocStats()
 {
     m_totalAllocations = 0;
-    m_totalReallocations = 0;
-    m_totalFrees = 0;
     m_totalBytesAllocated = 0;
+    m_totalFrees = 0;
     m_totalBytesFreed = 0;
+    m_totalReallocations = 0;
+    m_totalBytesFreedOnRealloc = 0;
+    m_totalBytesAllocedOnRealloc = 0;
     m_lineNumber = 0;
 }
 
@@ -85,9 +87,9 @@ size_t MallocStats::totalAllocations()
     return m_totalAllocations;
 }
 
-size_t MallocStats::totalReallocations()
+size_t MallocStats::totalBytesAllocated()
 {
-    return m_totalReallocations;
+    return m_totalBytesAllocated;
 }
 
 size_t MallocStats::totalFrees()
@@ -95,14 +97,24 @@ size_t MallocStats::totalFrees()
     return m_totalFrees;
 }
 
-size_t MallocStats::totalBytesAllocated()
-{
-    return m_totalBytesAllocated;
-}
-
 size_t MallocStats::totalBytesFreed()
 {
     return m_totalBytesFreed;
+}
+
+size_t MallocStats::totalReallocations()
+{
+    return m_totalReallocations;
+}
+
+size_t MallocStats::totalBytesFreedOnReallocation()
+{
+    return m_totalBytesFreedOnRealloc;
+}
+
+size_t MallocStats::totalBytesAllocedOnReallocation()
+{
+    return m_totalBytesAllocedOnRealloc;
 }
 
 
@@ -162,16 +174,14 @@ void *realloc(void *ptr, size_t size)
     MallocStats *item = MallocStack::last();
     if (item) {
         item->m_totalReallocations++;
-        item->m_totalBytesAllocated -= malloc_usable_size(ptr);
+        item->m_totalBytesFreedOnRealloc += malloc_usable_size(ptr);
     }
-
-    // TODO: store bytes deallocated (and reallocated) seperately
 
     static reallocptr real_realloc = (reallocptr)dlsym(RTLD_NEXT, "realloc");
     void *nptr = real_realloc(ptr, size);
 
     if (item) {
-        item->m_totalBytesAllocated += malloc_usable_size(nptr);
+        item->m_totalBytesAllocedOnRealloc += malloc_usable_size(nptr);
     }
     return nptr;
 }

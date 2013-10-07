@@ -90,10 +90,12 @@ MEMPROF_EXPORT void qmlmemprofile_pop_location()
     fprintf(stderr, "Popped %s, stats:\n", item->fileName());
 
     fprintf(stderr, "    Total allocations: %d\n", item->totalAllocations());
-    fprintf(stderr, "    Total reallocations: %d\n", item->totalAllocations());
     fprintf(stderr, "    Total bytes allocated: %d\n", item->totalBytesAllocated());
     fprintf(stderr, "    Total frees: %d\n", item->totalFrees());
     fprintf(stderr, "    Total bytes freed: %d\n", item->totalBytesFreed());
+    fprintf(stderr, "    Total reallocations: %d\n", item->totalAllocations());
+    fprintf(stderr, "    Total bytes potentially freed on realloc: %d\n", item->totalBytesFreedOnReallocation());
+    fprintf(stderr, "    Total bytes potentially allocated on realloc: %d\n", item->totalBytesAllocedOnReallocation());
 
     MallocStack::pop();
 }
