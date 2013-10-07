@@ -46,10 +46,6 @@
 
 #include "qmalloc.h"
 
-typedef void *(*mallocptr)(size_t);
-typedef void (*freeptr)(void*);
-typedef void *(*reallocptr)(void*, size_t);
-
 MallocStats::MallocStats()
 {
     m_totalAllocations = 0;
@@ -145,9 +141,19 @@ void MallocStack::pop()
  * intercepted alloc-related functions
  *****************************************************************************/
 
+typedef void *(*mallocptr)(size_t);
+typedef void (*freeptr)(void*);
+typedef void *(*reallocptr)(void*, size_t);
+
+static mallocptr real_malloc = 0;
+static freeptr real_free = 0;
+static reallocptr real_realloc = 0;
+
 void *malloc(size_t size)
 {
-    static mallocptr real_malloc = (mallocptr)dlsym(RTLD_NEXT, "malloc");
+    if (!real_malloc)
+        real_malloc = (mallocptr)dlsym(RTLD_NEXT, "malloc");
+
     void *ptr = real_malloc(size);
     MallocStats *item = MallocStack::last();
     if (item) {
@@ -159,25 +165,29 @@ void *malloc(size_t size)
 
 void free(void *ptr)
 {
+    if (!real_free)
+        real_free = (freeptr)dlsym(RTLD_NEXT, "free");
+
     MallocStats *item = MallocStack::last();
     if (item) {
         item->m_totalFrees++;
         item->m_totalBytesFreed += malloc_usable_size(ptr);
     }
 
-    static freeptr real_free = (freeptr)dlsym(RTLD_NEXT, "free");
     real_free(ptr);
 }
 
 void *realloc(void *ptr, size_t size)
 {
+    if (!real_realloc)
+        real_realloc = (reallocptr)dlsym(RTLD_NEXT, "realloc");
+
     MallocStats *item = MallocStack::last();
     if (item) {
         item->m_totalReallocations++;
         item->m_totalBytesFreedOnRealloc += malloc_usable_size(ptr);
     }
 
-    static reallocptr real_realloc = (reallocptr)dlsym(RTLD_NEXT, "realloc");
     void *nptr = real_realloc(ptr, size);
 
     if (item) {
