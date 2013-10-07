@@ -102,8 +102,9 @@ Q_CORE_EXPORT void qmlmemprofile_pop_location()
 
     qDebug() << "    Total allocations: " << MallocStats::totalAllocations();
     qDebug() << "    Total reallocations: " << MallocStats::totalAllocations();
-    qDebug() << "    Total frees: " << MallocStats::totalFrees();
     qDebug() << "    Total bytes allocated: " << MallocStats::totalBytesAllocated();
+    qDebug() << "    Total frees: " << MallocStats::totalFrees();
+    qDebug() << "    Total bytes freed: " << MallocStats::totalBytesFreed();
 
     // TODO: we should snapshot stats into LocationItem and diff them, not clear
     // them

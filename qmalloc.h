@@ -49,6 +49,7 @@ public:
     static size_t totalReallocations();
     static size_t totalFrees();
     static size_t totalBytesAllocated();
+    static size_t totalBytesFreed();
     static void clearStats();
 
     // use the accessors, I'm just too lazy to friend the alloc funcs
@@ -56,6 +57,7 @@ public:
     static size_t m_totalReallocations;
     static size_t m_totalFrees;
     static size_t m_totalBytesAllocated;
+    static size_t m_totalBytesFreed;
 };
 
 #endif

@@ -52,6 +52,7 @@ size_t MallocStats::m_totalAllocations = 0;
 size_t MallocStats::m_totalReallocations = 0;
 size_t MallocStats::m_totalFrees = 0;
 size_t MallocStats::m_totalBytesAllocated = 0;
+size_t MallocStats::m_totalBytesFreed = 0;
 
 size_t MallocStats::totalAllocations()
 {
@@ -73,12 +74,19 @@ size_t MallocStats::totalBytesAllocated()
     return m_totalBytesAllocated;
 }
 
+size_t MallocStats::totalBytesFreed()
+{
+    return m_totalBytesFreed;
+}
+
+
 void MallocStats::clearStats()
 {
     m_totalAllocations = 0;
     m_totalReallocations = 0;
     m_totalFrees = 0;
     m_totalBytesAllocated = 0;
+    m_totalBytesFreed = 0;
 }
 
 /*****************************************************************************
@@ -97,7 +105,7 @@ void *malloc(size_t size)
 void free(void *ptr)
 {
     MallocStats::m_totalFrees++;
-    MallocStats::m_totalBytesAllocated -= malloc_usable_size(ptr);
+    MallocStats::m_totalBytesFreed += malloc_usable_size(ptr);
 
     static freeptr real_free = (freeptr)dlsym(RTLD_NEXT, "free");
     real_free(ptr);
