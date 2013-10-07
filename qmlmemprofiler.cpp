@@ -79,6 +79,7 @@ MEMPROF_EXPORT void qmlmemprofile_disable()
 
 MEMPROF_EXPORT void qmlmemprofile_push_location(const char *fileName, int lineNumber)
 {
+    fprintf(stderr, "Pushing %s:%d\n", fileName, lineNumber);
     MallocStats *item = MallocStack::push();
     item->setFileName(fileName);
     item->setLineNumber(lineNumber);
@@ -87,15 +88,15 @@ MEMPROF_EXPORT void qmlmemprofile_push_location(const char *fileName, int lineNu
 MEMPROF_EXPORT void qmlmemprofile_pop_location()
 {
     MallocStats *item = MallocStack::last();
-    fprintf(stderr, "Popped %s, stats:\n", item->fileName());
+    fprintf(stderr, "Popped %s:%d, stats:\n", item->fileName(), item->lineNumber());
 
-    fprintf(stderr, "    Total allocations: %d\n", item->totalAllocations());
-    fprintf(stderr, "    Total bytes allocated: %d\n", item->totalBytesAllocated());
-    fprintf(stderr, "    Total frees: %d\n", item->totalFrees());
-    fprintf(stderr, "    Total bytes freed: %d\n", item->totalBytesFreed());
+    fprintf(stderr, "    Total allocated: %d bytes in %d total calls\n", item->totalBytesAllocated(), item->totalAllocations());
+    fprintf(stderr, "    Total frees: %d bytes in %d total calls\n", item->totalBytesFreed(), item->totalFrees());
     fprintf(stderr, "    Total reallocations: %d\n", item->totalAllocations());
     fprintf(stderr, "    Total bytes potentially freed on realloc: %d\n", item->totalBytesFreedOnReallocation());
     fprintf(stderr, "    Total bytes potentially allocated on realloc: %d\n", item->totalBytesAllocedOnReallocation());
+    fprintf(stderr, "    Total bytes (malloc-free) gained: %d\n", item->totalBytesAllocated() - item->totalBytesFreed());
+    fprintf(stderr, "    Total bytes (realloc_gained-realloc_lost) gained: %d\n", item->totalBytesAllocedOnReallocation() - item->totalBytesFreedOnReallocation());
 
     MallocStack::pop();
 }
