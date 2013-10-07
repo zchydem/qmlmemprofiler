@@ -39,85 +39,23 @@
  **
  ****************************************************************************/
 
-#include <QDebug>
+#ifndef QMALLOC_H
+#define QMALLOC_H
 
-#include "qmalloc.h"
-
-
-extern "C" {
-void qmlmemprofile_stats(int *allocCount, int *bytesAllocated);
-void qmlmemprofile_clear();
-void qmlmemprofile_enable();
-void qmlmemprofile_disable();
-void qmlmemprofile_push_location(const char *fileName, int lineNumber);
-void qmlmemprofile_pop_location();
-void qmlmemprofile_save(const char *filename);
-int qmlmemprofile_is_enabled();
-}
-
-struct LocationItem
+class MallocStats
 {
-    QByteArray fileName;
-    int lineNumber;
+public:
+    static size_t totalAllocations();
+    static size_t totalReallocations();
+    static size_t totalFrees();
+    static size_t totalBytesAllocated();
+    static void clearStats();
+
+    // use the accessors, I'm just too lazy to friend the alloc funcs
+    static size_t m_totalAllocations;
+    static size_t m_totalReallocations;
+    static size_t m_totalFrees;
+    static size_t m_totalBytesAllocated;
 };
 
-static QVector<LocationItem> locationStack;
-
-Q_CORE_EXPORT void qmlmemprofile_stats(int *allocCount, int *bytesAllocated)
-{
-    qWarning() << "STUB";
-    allocCount = 0;
-    bytesAllocated = 0;
-}
-
-Q_CORE_EXPORT void qmlmemprofile_clear()
-{
-    qWarning() << "STUB";
-}
-
-Q_CORE_EXPORT void qmlmemprofile_enable()
-{
-    qWarning() << "STUB";
-}
-
-Q_CORE_EXPORT void qmlmemprofile_disable()
-{
-    qWarning() << "STUB";
-}
-
-Q_CORE_EXPORT void qmlmemprofile_push_location(const char *fileName, int lineNumber)
-{
-    LocationItem item;
-    item.fileName = fileName;
-    item.lineNumber = lineNumber;
-    locationStack.append(item);
-//    qDebug() << "Recorded " << fileName << " bytes is " << R.ru_maxrss;
-}
-
-Q_CORE_EXPORT void qmlmemprofile_pop_location()
-{
-    Q_ASSERT(locationStack.count() >= 1);
-    LocationItem item = locationStack.takeLast();
-    qDebug() << "Popped " << item.fileName << " stats:";
-
-    qDebug() << "    Total allocations: " << MallocStats::totalAllocations();
-    qDebug() << "    Total reallocations: " << MallocStats::totalAllocations();
-    qDebug() << "    Total frees: " << MallocStats::totalFrees();
-    qDebug() << "    Total bytes allocated: " << MallocStats::totalBytesAllocated();
-
-    // TODO: we should snapshot stats into LocationItem and diff them, not clear
-    // them
-    MallocStats::clearStats();
-}
-
-Q_CORE_EXPORT void qmlmemprofile_save(const char *filename)
-{
-    qWarning() << "STUB";
-}
-
-Q_CORE_EXPORT int qmlmemprofile_is_enabled()
-{
-    // TODO: environment variable enablement?
-    return 1;
-}
-
+#endif

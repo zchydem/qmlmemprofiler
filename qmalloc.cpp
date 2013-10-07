@@ -39,85 +39,78 @@
  **
  ****************************************************************************/
 
-#include <QDebug>
+#include <dlfcn.h>
+#include <malloc.h>
 
 #include "qmalloc.h"
 
+typedef void *(*mallocptr)(size_t);
+typedef void (*freeptr)(void*);
+typedef void *(*reallocptr)(void*, size_t);
 
-extern "C" {
-void qmlmemprofile_stats(int *allocCount, int *bytesAllocated);
-void qmlmemprofile_clear();
-void qmlmemprofile_enable();
-void qmlmemprofile_disable();
-void qmlmemprofile_push_location(const char *fileName, int lineNumber);
-void qmlmemprofile_pop_location();
-void qmlmemprofile_save(const char *filename);
-int qmlmemprofile_is_enabled();
+size_t MallocStats::m_totalAllocations = 0;
+size_t MallocStats::m_totalReallocations = 0;
+size_t MallocStats::m_totalFrees = 0;
+size_t MallocStats::m_totalBytesAllocated = 0;
+
+size_t MallocStats::totalAllocations()
+{
+    return m_totalAllocations;
 }
 
-struct LocationItem
+size_t MallocStats::totalReallocations()
 {
-    QByteArray fileName;
-    int lineNumber;
-};
-
-static QVector<LocationItem> locationStack;
-
-Q_CORE_EXPORT void qmlmemprofile_stats(int *allocCount, int *bytesAllocated)
-{
-    qWarning() << "STUB";
-    allocCount = 0;
-    bytesAllocated = 0;
+    return m_totalReallocations;
 }
 
-Q_CORE_EXPORT void qmlmemprofile_clear()
+size_t MallocStats::totalFrees()
 {
-    qWarning() << "STUB";
+    return m_totalFrees;
 }
 
-Q_CORE_EXPORT void qmlmemprofile_enable()
+size_t MallocStats::totalBytesAllocated()
 {
-    qWarning() << "STUB";
+    return m_totalBytesAllocated;
 }
 
-Q_CORE_EXPORT void qmlmemprofile_disable()
+void MallocStats::clearStats()
 {
-    qWarning() << "STUB";
+    m_totalAllocations = 0;
+    m_totalReallocations = 0;
+    m_totalFrees = 0;
+    m_totalBytesAllocated = 0;
 }
 
-Q_CORE_EXPORT void qmlmemprofile_push_location(const char *fileName, int lineNumber)
+/*****************************************************************************
+ * intercepted alloc-related functions
+ *****************************************************************************/
+
+void *malloc(size_t size)
 {
-    LocationItem item;
-    item.fileName = fileName;
-    item.lineNumber = lineNumber;
-    locationStack.append(item);
-//    qDebug() << "Recorded " << fileName << " bytes is " << R.ru_maxrss;
+    static mallocptr real_malloc = (mallocptr)dlsym(RTLD_NEXT, "malloc");
+    void *ptr = real_malloc(size);
+    MallocStats::m_totalAllocations++;
+    MallocStats::m_totalBytesAllocated += malloc_usable_size(ptr);
+    return ptr;
 }
 
-Q_CORE_EXPORT void qmlmemprofile_pop_location()
+void free(void *ptr)
 {
-    Q_ASSERT(locationStack.count() >= 1);
-    LocationItem item = locationStack.takeLast();
-    qDebug() << "Popped " << item.fileName << " stats:";
+    MallocStats::m_totalFrees++;
+    MallocStats::m_totalBytesAllocated -= malloc_usable_size(ptr);
 
-    qDebug() << "    Total allocations: " << MallocStats::totalAllocations();
-    qDebug() << "    Total reallocations: " << MallocStats::totalAllocations();
-    qDebug() << "    Total frees: " << MallocStats::totalFrees();
-    qDebug() << "    Total bytes allocated: " << MallocStats::totalBytesAllocated();
-
-    // TODO: we should snapshot stats into LocationItem and diff them, not clear
-    // them
-    MallocStats::clearStats();
+    static freeptr real_free = (freeptr)dlsym(RTLD_NEXT, "free");
+    real_free(ptr);
 }
 
-Q_CORE_EXPORT void qmlmemprofile_save(const char *filename)
+void *realloc(void *ptr, size_t size)
 {
-    qWarning() << "STUB";
-}
+    MallocStats::m_totalReallocations++;
+    MallocStats::m_totalBytesAllocated -= malloc_usable_size(ptr);
 
-Q_CORE_EXPORT int qmlmemprofile_is_enabled()
-{
-    // TODO: environment variable enablement?
-    return 1;
-}
+    static reallocptr real_realloc = (reallocptr)dlsym(RTLD_NEXT, "realloc");
+    void *nptr = real_realloc(ptr, size);
 
+    MallocStats::m_totalBytesAllocated += malloc_usable_size(nptr);
+    return nptr;
+}
